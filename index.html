@@ -3,30 +3,117 @@
 
 <head>
 
-<title>Live Football</title>
+<title>Futebol ao Vivo</title>
 
-<link href="https://vjs.zencdn.net/8.5.2/video-js.css" rel="stylesheet">
+<link href="https://vjs.zencdn.net/8.23.4/video-js.css" rel="stylesheet">
+
+<style>
+
+body{
+background:#0f172a;
+color:white;
+font-family:Arial;
+text-align:center;
+}
+
+.game{
+background:#1e293b;
+padding:10px;
+margin:10px;
+cursor:pointer;
+border-radius:6px;
+}
+
+.game:hover{
+background:#334155;
+}
+
+</style>
 
 </head>
 
 <body>
 
-<h1>Jogo ao Vivo</h1>
+<h1>⚽ Jogos Ao Vivo</h1>
 
 <video
 id="player"
-class="video-js"
+class="video-js vjs-big-play-centered"
 controls
 autoplay
 width="800"
 height="450">
 
-<source src="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
-type="application/x-mpegURL">
+<source id="streamSource" src="" type="application/x-mpegURL">
 
 </video>
 
-<script src="https://vjs.zencdn.net/8.5.2/video.min.js"></script>
+<h2>Escolha o jogo</h2>
+
+<div id="games"></div>
+
+<script src="https://vjs.zencdn.net/8.23.4/video.min.js"></script>
+
+<script>
+
+var player = videojs('player');
+
+const games = [
+
+{
+name:"Real Madrid vs Barcelona",
+stream:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+},
+
+{
+name:"Manchester City vs Liverpool",
+stream:"https://test-streams.mux.dev/test_001/stream.m3u8"
+},
+
+{
+name:"PSG vs Bayern",
+stream:"https://moiptvhls-i.akamaihd.net/hls/live/652316/Live_1/master.m3u8"
+}
+
+];
+
+function loadGames(){
+
+const container=document.getElementById("games");
+
+games.forEach(game=>{
+
+let div=document.createElement("div");
+
+div.className="game";
+
+div.innerText=game.name;
+
+div.onclick=()=>playGame(game.stream);
+
+container.appendChild(div);
+
+});
+
+}
+
+function playGame(stream){
+
+player.src({
+
+src:stream,
+
+type:"application/x-mpegURL"
+
+});
+
+player.play();
+
+}
+
+loadGames();
+
+</script>
 
 </body>
 
