@@ -1,120 +1,159 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
 <title>Futebol ao Vivo</title>
 
+<!-- CSS do Video.js -->
 <link href="https://vjs.zencdn.net/8.23.4/video-js.css" rel="stylesheet">
 
 <style>
-
-body{
-background:#0f172a;
-color:white;
-font-family:Arial;
-text-align:center;
+body {
+  background: #0f172a;
+  color: white;
+  font-family: Arial;
+  text-align: center;
 }
-
-.game{
-background:#1e293b;
-padding:10px;
-margin:10px;
-cursor:pointer;
-border-radius:6px;
+.game {
+  background: #1e293b;
+  padding: 10px;
+  margin: 10px;
+  cursor: pointer;
+  border-radius: 6px;
 }
-
-.game:hover{
-background:#334155;
+.game:hover {
+  background: #334155;
 }
-
+.news {
+  background:#1e293b;
+  padding:10px;
+  margin:5px;
+  border-radius:6px;
+}
 </style>
-
 </head>
 
 <body>
 
-<h1>⚽ Jogos Ao Vivo</h1>
+<h1>⚽ Jogos e Notícias ao Vivo</h1>
 
-<video
-id="player"
-class="video-js vjs-big-play-centered"
-controls
-autoplay
-width="800"
-height="450">
-
-<source id="streamSource" src="" type="application/x-mpegURL">
-
+<!-- Player de vídeo -->
+<video id="player" class="video-js vjs-big-play-centered" controls autoplay width="800" height="450">
+  <source id="streamSource" src="" type="application/x-mpegURL">
 </video>
 
 <h2>Escolha o jogo</h2>
-
 <div id="games"></div>
 
+<h2>Últimas notícias</h2>
+<div id="news"></div>
+
+<h2>Estatísticas do jogo</h2>
+<div id="stats"></div>
+
+<!-- Script do Video.js -->
 <script src="https://vjs.zencdn.net/8.23.4/video.min.js"></script>
 
 <script>
-
 var player = videojs('player');
 
-const games = [
+// --- Configuração das APIs ---
+const API_RESULTS_KEY = "832dbaa491deb9a540913f0ad97753b882745a61";
+const API_NEWS_KEY = "caea3136e0d048008ad3d23f6f9d3783";
+const API_STATS_KEY = "VUkI5FcLGPO0ToCD9IytgrqEPbSUQLQQCcr0XjliHWbqF1Zjt7aSmuoPYiWi";
 
-{
-name:"Real Madrid vs Barcelona",
-stream:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
-},
+// --- Função para buscar jogos ao vivo ---
+async function fetchLiveGames() {
+  try {
+    const res = await fetch(`https://api-futebol.com/live-games?api_key=${API_RESULTS_KEY}`);
+    const data = await res.json();
 
-{
-name:"Manchester City vs Liverpool",
-stream:"https://test-streams.mux.dev/test_001/stream.m3u8"
-},
+    // data deve ser um array de jogos
+    const games = data.map(item => ({
+      name: item.home_team + " vs " + item.away_team,
+      start: item.date,
+      league: item.league,
+      // Aqui você adiciona o stream legal se tiver
+      stream: item.stream || ""
+    }));
 
-{
-name:"PSG vs Bayern",
-stream:"https://moiptvhls-i.akamaihd.net/hls/live/652316/Live_1/master.m3u8"
+    return games;
+  } catch(err) {
+    console.error("Erro ao buscar jogos:", err);
+    return [];
+  }
 }
 
-];
-
-function loadGames(){
-
-const container=document.getElementById("games");
-
-games.forEach(game=>{
-
-let div=document.createElement("div");
-
-div.className="game";
-
-div.innerText=game.name;
-
-div.onclick=()=>playGame(game.stream);
-
-container.appendChild(div);
-
-});
-
+// --- Mostrar jogos na tela ---
+function loadGames(games) {
+  const container = document.getElementById("games");
+  container.innerHTML = ""; // limpa antes de atualizar
+  games.forEach(game => {
+    let div = document.createElement("div");
+    div.className = "game";
+    div.innerText = `${game.name} (${game.league}) - ${new Date(game.start).toLocaleTimeString()}`;
+    div.onclick = () => playGame(game.stream);
+    container.appendChild(div);
+  });
 }
 
-function playGame(stream){
-
-player.src({
-
-src:stream,
-
-type:"application/x-mpegURL"
-
-});
-
-player.play();
-
+// --- Função para tocar o stream ---
+function playGame(stream) {
+  if(!stream) {
+    alert("Stream indisponível ou não autorizado.");
+    return;
+  }
+  player.src({ src: stream, type: "application/x-mpegURL" });
+  player.play();
 }
 
-loadGames();
+// --- Buscar notícias ---
+async function fetchNews() {
+  try {
+    const res = await fetch(`https://api-futebol.com/news?api_key=${API_NEWS_KEY}`);
+    const data = await res.json();
+
+    const container = document.getElementById("news");
+    container.innerHTML = "";
+    data.forEach(news => {
+      let div = document.createElement("div");
+      div.className = "news";
+      div.innerHTML = `<strong>${news.title}</strong><br>${news.summary}`;
+      container.appendChild(div);
+    });
+  } catch(err) {
+    console.error("Erro ao buscar notícias:", err);
+  }
+}
+
+// --- Buscar estatísticas ---
+async function fetchStats() {
+  try {
+    const res = await fetch(`https://api-futebol.com/stats?api_key=${API_STATS_KEY}`);
+    const data = await res.json();
+
+    const container = document.getElementById("stats");
+    container.innerHTML = "";
+    data.forEach(stat => {
+      let div = document.createElement("div");
+      div.innerHTML = `${stat.type}: ${stat.value}`;
+      container.appendChild(div);
+    });
+  } catch(err) {
+    console.error("Erro ao buscar estatísticas:", err);
+  }
+}
+
+// --- Atualizar tudo a cada 30s ---
+async function updateAll() {
+  const games = await fetchLiveGames();
+  loadGames(games);
+  fetchNews();
+  fetchStats();
+}
+
+updateAll();
+setInterval(updateAll, 30000);
 
 </script>
-
 </body>
-
 </html>
